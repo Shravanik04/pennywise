@@ -47,6 +47,7 @@ const isRecord = (value: unknown): value is Record<string, unknown> => Boolean(v
 const isReceiptItem = (value: unknown): value is ReceiptItem => isRecord(value)
   && typeof value.id === 'string' && typeof value.name === 'string'
   && typeof value.category === 'string' && Number.isFinite(value.price)
+  && (value.quantity === undefined || (typeof value.quantity === 'number' && Number.isFinite(value.quantity) && value.quantity > 0))
 
 const toExpense = (row: CloudExpenseRow): ExpenseRecord => {
   const amount = Number(row.amount)
