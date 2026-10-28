@@ -2,6 +2,10 @@
 
 A React, TypeScript, and Vite personal finance dashboard with receipt OCR, editable expense review, category budgets, calculated insights, and searchable expense history.
 
+## Live app
+
+Visit the deployed app at [https://pennywise-orcin.vercel.app](https://pennywise-orcin.vercel.app).
+
 ## Run locally
 
 1. Install Node.js 20.19+ (or 22.12+).
@@ -22,7 +26,7 @@ Sign up, log in, log out, and password recovery use Supabase Auth. Account sign-
 1. Create a Supabase project and enable email/password authentication.
 2. Run [`supabase/migrations/20261028000000_create_expenses.sql`](./supabase/migrations/20261028000000_create_expenses.sql) in the Supabase SQL Editor (or apply it with the Supabase CLI). It creates the `public.expenses` and `public.budgets` tables, enables row-level security, adds per-user policies, and adds both tables to the realtime publication.
 3. Copy `.env.example` to `.env.local` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` using the project's URL and public anon/publishable key.
-4. In Supabase Auth URL configuration, allow the local Vite origin (for example `http://localhost:5173`) and the deployed app URL as redirect URLs. Keep email confirmation enabled as appropriate for your project.
+4. In Supabase Auth URL configuration, allow the local Vite origin (for example `http://localhost:5173`) and `https://pennywise-orcin.vercel.app/**` as redirect URLs. Keep email confirmation enabled as appropriate for your project.
 5. Restart the Vite development server. Use **Settings** to sign up or log in. Email confirmation may be required based on the Supabase Auth settings. Password recovery sends a Supabase email link back to the app; the recovery screen lets the user set a new password.
 6. Confirm the app reports that the database and live expense and budget updates are connected. If configuration, the database tables, policies, or subscription cannot be verified, the app displays an error and does not present cloud data as connected.
 
