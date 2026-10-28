@@ -1,43 +1,93 @@
-# Pennywise
+# Pennywise — Money, made mindful 💸
 
-A React, TypeScript, and Vite personal finance dashboard with receipt OCR, editable expense review, category budgets, calculated insights, and searchable expense history.
+Pennywise is a personal finance app for tracking expenses, organizing budgets, and understanding spending patterns. Add expenses manually or scan a receipt. Extracted receipt details are presented for review and editing before anything is saved.
 
-## Live app
+**🌐 Live app:** [pennywise-orcin.vercel.app](https://pennywise-orcin.vercel.app)
 
-Visit the deployed app at [https://pennywise-orcin.vercel.app](https://pennywise-orcin.vercel.app).
+## ✨ Features
 
-## Run locally
+- ✍️ Add and manage expenses manually.
+- 🧾 Scan receipt images and PDFs, then review and edit extracted details before saving.
+- 🗂️ Categorize items and view category totals.
+- 🎯 Set monthly budgets and track spending.
+- 🔎 Search expense history and filter by category.
+- 📊 View calculated spending insights and ask questions about saved expenses.
+- ☁️ Use browser-local storage or, when configured, Supabase authentication and account-scoped cloud data.
 
-1. Install Node.js 20.19+ (or 22.12+).
-2. From this project directory, run `npm install`.
-3. Run `npm run dev` and open Vite's local URL.
-4. Create a production build with `npm run build`.
+## 🛠️ Tech stack
 
-## Local-only mode
+- React
+- TypeScript
+- Vite
+- Supabase Auth, Postgres, and Realtime (optional)
+- Tesseract.js for image OCR
+- PDF.js for rendering PDF pages in the browser
 
-Without Supabase environment variables, Pennywise starts with no expenses or budgets. Expenses, budgets, recurring-suggestion decisions, and receipt files are stored in this browser's IndexedDB. They persist after refresh and local changes are broadcast to other open tabs on the same origin. Browser-local data is not shared with other devices or users and is not backed up. Clearing this site's browser data removes it.
+## 🚀 Run locally
 
-On startup, Pennywise removes only the legacy known sample expense IDs (`sample-1` through `sample-5` and the two `sample-recurring-netflix-*` records). Other saved expenses and budgets are retained.
+**Requirements:** Node.js 20.19+ or 22.12+.
 
-## Supabase accounts and private data
+```bash
+npm install
+npm run dev
+```
 
-Sign up, log in, log out, and password recovery use Supabase Auth. Account sign-in and cloud data are disabled until both environment variables are set and a signed-in database connection and realtime subscription succeed. No credentials are committed to the project. Without configuration, local-only expense tracking remains available; open **Settings** for the authentication setup status and steps. No login is simulated.
+Open the local URL shown in the terminal. To create a production build:
+
+```bash
+npm run build
+```
+
+## 💾 Storage modes
+
+### 🖥️ Browser-local mode
+
+Without Supabase configuration, Pennywise runs in local-only mode. Expenses, budgets, recurring-suggestion decisions, and receipt files are stored in the current browser using IndexedDB. They persist after refresh and local changes are shared between open tabs on the same origin.
+
+Local data is not backed up or shared between devices or users. Clearing the browser’s site data removes it.
+
+On startup, Pennywise removes only known legacy sample expense IDs. Other saved expenses and budgets are retained.
+
+### 🔐 Supabase mode
+
+When configured and successfully connected, Pennywise uses Supabase Auth and stores expenses and budgets in the signed-in user’s account. Row Level Security policies restrict access to each user’s own records, and Supabase Realtime delivers expense and budget changes to that user’s open sessions.
+
+Receipt file contents remain on the device where they were uploaded. The receipt filename and type may be saved with the expense, but the original file does not sync between devices.
+
+Existing browser-local expenses and budgets are not automatically copied to Supabase when cloud mode is enabled. They remain in the browser’s local database; cloud-mode views use the signed-in account’s Supabase data.
+
+## ⚙️ Configure Supabase
 
 1. Create a Supabase project and enable email/password authentication.
-2. Run [`supabase/migrations/20261028000000_create_expenses.sql`](./supabase/migrations/20261028000000_create_expenses.sql) in the Supabase SQL Editor (or apply it with the Supabase CLI). It creates the `public.expenses` and `public.budgets` tables, enables row-level security, adds per-user policies, and adds both tables to the realtime publication.
-3. Copy `.env.example` to `.env.local` and set `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` using the project's URL and public anon/publishable key.
-4. In Supabase Auth URL configuration, allow the local Vite origin (for example `http://localhost:5173`) and `https://pennywise-orcin.vercel.app/**` as redirect URLs. Keep email confirmation enabled as appropriate for your project.
-5. Restart the Vite development server. Use **Settings** to sign up or log in. Email confirmation may be required based on the Supabase Auth settings. Password recovery sends a Supabase email link back to the app; the recovery screen lets the user set a new password.
-6. Confirm the app reports that the database and live expense and budget updates are connected. If configuration, the database tables, policies, or subscription cannot be verified, the app displays an error and does not present cloud data as connected.
+2. Run [`supabase/migrations/20261028000000_create_expenses.sql`](supabase/migrations/20261028000000_create_expenses.sql) in the Supabase SQL Editor, or apply it using the Supabase CLI. The migration creates the `expenses` and `budgets` tables, enables Row Level Security, adds per-user policies, and adds both tables to the Realtime publication.
+3. Copy `.env.example` to `.env.local` and set the project URL and public key:
 
-Expenses and budgets are stored in Supabase for the signed-in user. Row-level security restricts select, insert, update, and delete to that owner's `user_id`. Supabase Realtime listens to both tables, filtered to the signed-in user. Recurring-suggestion decisions and receipt file contents remain in this browser and do not sync between devices. The expense's receipt filename/type may sync, but the original file is local to the device where it was uploaded.
+   ```env
+   VITE_SUPABASE_URL=https://your-project-id.supabase.co
+   VITE_SUPABASE_ANON_KEY=your-publishable-or-anon-key
+   ```
 
-Existing browser-only expenses and budgets are not deleted or automatically copied into a Supabase account when configuration is added. They remain in the browser's local database; cloud-mode views use only the signed-in account's Supabase expenses and budgets.
+4. In Supabase **Authentication → URL Configuration**, set the Site URL to your app’s URL and add the app’s local and deployed URLs to the Redirect URLs list. For example:
 
-Never put a Supabase service-role key in this frontend. The public anon/publishable key is intended for browser use only with the included row-level security policies enabled.
+   ```text
+   http://localhost:5173/**
+   https://pennywise-orcin.vercel.app/**
+   ```
 
-## Receipts and calculated insights
+   Use the actual local port shown by Vite if it differs.
+5. Restart the Vite development server. Open **Settings** in Pennywise to sign up or log in. Email confirmation may be required depending on your Supabase Auth settings.
+6. Confirm the app reports that the database and live expense and budget updates are connected. If configuration, database tables, policies, or the realtime subscription cannot be verified, the app reports an error instead of presenting cloud data as connected.
 
-Image receipts are read in the browser with Tesseract OCR. PDF pages are rendered locally with PDF.js before OCR. The initial OCR scan downloads Tesseract's English language data from its public CDN. OCR values are suggestions: merchant, date, total, tax, line items, and item categories can be edited, and a user must review and confirm before an expense is saved. Unreadable values remain blank; manual entry remains available if OCR fails.
+Never put a Supabase `service_role` or secret key in this frontend. The anon or publishable key is intended for browser use only when the included Row Level Security policies are enabled.
 
-Dashboard figures, category allocations, recurring-payment suggestions, month-end estimates, and Ask Penny answers are calculations based on the user's saved expenses—not an AI service or financial advice. Comparisons and patterns are omitted or marked as needing more data when the saved history is insufficient.
+## 🧾 Receipts and insights
+
+Image receipts are processed in the browser with Tesseract OCR. PDF pages are rendered in the browser with PDF.js before OCR. The first OCR scan downloads Tesseract’s English language data from its public CDN, so an internet connection is needed for that download.
+
+OCR results are suggestions. Merchant, date, total, tax, line items, and categories can be edited, and the user must review and confirm before an expense is saved. Unreadable values remain blank; manual entry is available if scanning fails.
+
+Dashboard totals, category allocations, recurring-payment suggestions, month-end estimates, and Ask Penny answers are calculated from saved expenses. They are not generated by a connected AI service and are not financial advice. Insights may be omitted when there is not enough expense history.
+
+## 🚀 Deployment
+
+The live app is deployed at [https://pennywise-orcin.vercel.app](https://pennywise-orcin.vercel.app). For another Vercel deployment, configure `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` in the Vercel project’s environment variables, then deploy. Add the deployed domain to Supabase’s Authentication redirect URLs.
