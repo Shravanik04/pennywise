@@ -1,0 +1,8 @@
+- [x] Verified the workspace is empty and selected React, TypeScript, and Vite.
+- [x] Scaffolded Pennywise with data-driven monthly and six-month dashboard, editable category budgets, data-based insights, and saved-data Ask Penny answers.
+- [x] Added image/PDF receipt OCR, editable review and confirmation, persistent IndexedDB expense CRUD, filters, and synced dashboard data.
+- [x] Added sample INR data and responsive green-and-cream styling.
+- [x] No extensions needed.
+- [x] Installed dependencies, smoke-tested budget thresholds, receipt OCR review/category allocations, search, mobile overflow, expense CRUD and persistence; production build passes.
+- [x] Local run instructions are documented in README.md; app is not launched automatically.
+- [x] Documentation complete.

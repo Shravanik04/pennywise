@@ -1,0 +1,43 @@
+import { ArrowUpRight, ReceiptText, TrendingUp } from 'lucide-react'
+import type { ExpenseRecord } from '../expenseStore'
+import { currency, isCurrentMonth, monthCategoryTotals, monthlyHistory, readableMonth } from '../finance'
+
+type Props = { expenses: ExpenseRecord[]; budgets: Array<{ id: string; category: string; limit: number }>; onOpenExpenses: () => void; onOpenBudgets: () => void }
+const categoryColors: Record<string, string> = { 'Food & drink': '#40745b', Groceries: '#b4c9a8', 'Personal Care': '#d8a785', Transport: '#e4b88b', Bills: '#c9bfdf', Shopping: '#b4c9a8', Subscriptions: '#d49a9e', Health: '#8db2a2', Other: '#adb89c' }
+
+export default function Dashboard({ expenses, budgets, onOpenExpenses, onOpenBudgets }: Props) {
+  const month = new Date()
+  const currentMonth = `${month.getFullYear()}-${String(month.getMonth() + 1).padStart(2, '0')}`
+  const thisMonth = expenses.filter((expense) => isCurrentMonth(expense.date))
+  const total = thisMonth.reduce((sum, expense) => sum + expense.amount, 0)
+  const average = thisMonth.length ? total / thisMonth.length : 0
+  const largest = thisMonth.reduce<ExpenseRecord | null>((top, expense) => !top || expense.amount > top.amount ? expense : top, null)
+  const currentCategories = monthCategoryTotals(expenses, currentMonth)
+  const categorySummary = [...currentCategories].map(([name, amount]) => ({ name, amount })).sort((a, b) => b.amount - a.amount).slice(0, 5)
+  const history = monthlyHistory(expenses)
+  const hasAny = expenses.length > 0
+
+  return <>
+    <section className="stats-grid" aria-label="This month at a glance">
+      <article className="stat-card"><div className="stat-top"><span>Total spent · {readableMonth(month)}</span><span className="stat-icon spent-icon"><TrendingUp size={18}/></span></div><div className="stat-value">{thisMonth.length ? currency(total) : '—'}</div><div className="stat-bottom">{thisMonth.length ? 'Across this month’s recorded expenses' : 'No expenses recorded this month'}</div></article>
+      <article className="stat-card"><div className="stat-top"><span>Transactions</span><span className="stat-icon balance-icon"><ReceiptText size={18}/></span></div><div className="stat-value">{thisMonth.length}</div><div className="stat-bottom">{thisMonth.length ? 'This month' : 'Add an expense to get started'}</div></article>
+      <article className="stat-card"><div className="stat-top"><span>Average expense</span><span className="stat-icon budget-icon"><ReceiptText size={18}/></span></div><div className="stat-value">{thisMonth.length ? currency(average) : '—'}</div><div className="stat-bottom">{thisMonth.length ? 'Per transaction this month' : 'Add expenses to calculate an average'}</div></article>
+      <article className="stat-card"><div className="stat-top"><span>Largest expense</span><span className="stat-icon saved-icon"><ArrowUpRight size={18}/></span></div><div className="stat-value">{largest ? currency(largest.amount) : '—'}</div><div className="stat-bottom">{largest ? largest.merchant : 'No expenses recorded this month'}</div></article>
+    </section>
+
+    <section className="middle-grid"><article className="panel spending-panel"><div className="panel-heading"><div><h2>Spending over six months</h2><p>Monthly totals based on saved expenses</p></div><button className="select-button" onClick={onOpenExpenses}>View expenses <ArrowUpRight size={14}/></button></div><SixMonthChart history={history}/></article>
+      <article className="panel categories-panel"><div className="panel-heading"><div><h2>Category breakdown</h2><p>This month · apportioned to item categories</p></div></div>{categorySummary.length ? <><div className="category-list">{categorySummary.map((category) => <div className="category-row" key={category.name}><div className="category-icon" style={{backgroundColor:`${categoryColors[category.name] ?? categoryColors.Other}22`}}>{category.name === 'Personal Care' ? '🧴' : '◈'}</div><div className="category-detail"><div className="category-label"><b>{category.name}</b><span>{currency(category.amount)}</span></div><div className="category-track"><span style={{width:`${total ? Math.min(category.amount / total * 100, 100) : 0}%`,backgroundColor:categoryColors[category.name] ?? categoryColors.Other}}/></div></div></div>)}</div><button className="text-link" onClick={onOpenExpenses}>View all expenses <ArrowUpRight size={14}/></button></> : <div className="dashboard-empty compact"><span>◈</span><b>No category activity yet</b><p>Saved expenses will be grouped by their item categories.</p></div>}</article></section>
+
+    <section className="bottom-grid"><article className="panel transactions-panel"><div className="panel-heading transaction-heading"><div><h2>Recent transactions</h2><p>Latest saved expenses</p></div><button className="text-link" onClick={onOpenExpenses}>See all <ArrowUpRight size={14}/></button></div>{hasAny ? <><div className="transaction-table"><div className="table-head"><span>MERCHANT</span><span>CATEGORY</span><span>DATE</span><span>AMOUNT</span></div>{expenses.slice(0, 5).map((expense) => <div className="transaction-row" key={expense.id}><div className="merchant-cell"><span className={`merchant-icon ${expense.tone}`}>{expense.icon}</span><b>{expense.merchant}</b></div><span className="category-cell">{expense.category}</span><span className="date-cell">{new Date(`${expense.date}T00:00:00`).toLocaleDateString('en-IN',{day:'numeric',month:'short'})}</span><b className="amount-cell">{currency(expense.amount)}</b></div>)}</div><div className="mobile-transactions">{expenses.slice(0, 5).map((expense) => <div className="mobile-transaction" key={expense.id}><span className={`merchant-icon ${expense.tone}`}>{expense.icon}</span><div><b>{expense.merchant}</b><small>{expense.category} · {expense.date}</small></div><strong>{currency(expense.amount)}</strong></div>)}</div></> : <div className="dashboard-empty"><span>🧾</span><b>Your first expense starts here</b><p>Scan a receipt or add an expense to see your activity.</p><button className="primary-button" onClick={onOpenExpenses}>Add an expense</button></div>}</article>
+      <article className="panel dashboard-budget-card"><div className="panel-heading"><div><h2>Monthly budgets</h2><p>Progress refreshes from saved expenses</p></div><button className="text-link" onClick={onOpenBudgets}>Manage <ArrowUpRight size={14}/></button></div>{budgets.slice(0, 3).map((budget) => { const spent = currentCategories.get(budget.category) ?? 0; return <div className="budget-mini-row" key={budget.id}><div><b>{budget.category}</b><span>{currency(spent)} / {currency(budget.limit)}</span></div><div className="category-track"><span style={{width:`${Math.min(spent / budget.limit * 100, 100)}%`,background:spent >= budget.limit ? '#b65b4b' : spent >= budget.limit * .8 ? '#d4a057' : categoryColors[budget.category] ?? categoryColors.Other}}/></div></div>})}{budgets.length === 0 && <div className="dashboard-empty compact"><b>No budgets set</b><p>Create monthly limits and track category progress here.</p><button className="text-link" onClick={onOpenBudgets}>Set up budgets <ArrowUpRight size={14}/></button></div>}<button className="text-link" onClick={onOpenBudgets}>View all budgets <ArrowUpRight size={14}/></button></article></section>
+    <p className="dashboard-note">All figures are calculated from expenses saved in Pennywise.</p>
+    <div className="sr-only" aria-live="polite">{thisMonth.length ? `This month: ${thisMonth.length} transactions totaling ${currency(total)}.` : 'No expenses recorded this month.'}</div>
+  </>
+}
+
+function SixMonthChart({ history }: { history: ReturnType<typeof monthlyHistory> }) {
+  const hasHistory = history.some((entry) => entry.total > 0)
+  if (!hasHistory) return <div className="six-chart"><div className="six-chart-empty">Your six-month spending history will appear here once expenses are saved.</div></div>
+  const ceiling = Math.max(...history.map((entry) => entry.total), 1000)
+  return <div className="six-chart" role="img" aria-label={`Six month spending chart: ${history.map((entry) => `${entry.label} ${currency(entry.total)}`).join(', ')}`}><div className="six-chart-grid"><span>{currency(ceiling)}</span><span>{currency(ceiling / 2)}</span><span>₹0</span></div><div className="six-chart-bars">{history.map((entry) => <div key={entry.month} className="six-chart-column"><div className={`six-bar ${entry.month === history[history.length - 1]?.month ? 'current' : ''}`} style={{height:`${Math.max(entry.total ? 5 : 0, entry.total / ceiling * 100)}%`}} title={`${entry.label}: ${currency(entry.total)}, ${entry.count} transactions`}>{entry.total > 0 && <span>{currency(entry.total)}</span>}</div><small>{entry.label}</small></div>)}</div></div>
+}
