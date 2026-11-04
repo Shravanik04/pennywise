@@ -1,4 +1,4 @@
-import type { ExpenseRecord } from './expenseStore'
+import type { DateFormat, ExpenseRecord } from './expenseStore'
 
 export const todayKey = () => {
   const date = new Date()
@@ -8,6 +8,18 @@ export const monthKey = (date: Date) => `${date.getFullYear()}-${String(date.get
 export const isCurrentMonth = (date: string) => date.slice(0, 7) === monthKey(new Date())
 export const currency = (amount: number) => `₹${amount.toLocaleString('en-IN', { maximumFractionDigits: 2 })}`
 export const readableMonth = (date: Date, short = false) => new Intl.DateTimeFormat('en-IN', { month: short ? 'short' : 'long', year: 'numeric' }).format(date)
+export const formatDate = (value: string | Date, format: DateFormat = 'd-mmm-yyyy', weekday?: 'long') => {
+  const date = value instanceof Date ? value : new Date(`${value}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return ''
+  const weekdayText = weekday ? `${new Intl.DateTimeFormat('en-IN', { weekday }).format(date)}, ` : ''
+  if (format === 'dd/mm/yyyy') {
+    return `${weekdayText}${String(date.getDate()).padStart(2, '0')}/${String(date.getMonth() + 1).padStart(2, '0')}/${date.getFullYear()}`
+  }
+  if (format === 'yyyy-mm-dd') {
+    return `${weekdayText}${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+  }
+  return `${weekdayText}${new Intl.DateTimeFormat('en-IN', { day: 'numeric', month: 'short', year: 'numeric' }).format(date)}`
+}
 
 export function categoryAllocations(expense: Pick<ExpenseRecord, 'amount' | 'subtotal' | 'items' | 'category'>) {
   const categories = new Map<string, number>()

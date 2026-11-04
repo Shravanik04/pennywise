@@ -1,13 +1,13 @@
 import { useMemo, useState } from 'react'
 import { ArrowUpRight, Send, Sparkles } from 'lucide-react'
-import type { ExpenseRecord } from '../expenseStore'
-import { categoryAllocations, currency, isCurrentMonth, readableMonth } from '../finance'
+import type { DateFormat, ExpenseRecord } from '../expenseStore'
+import { categoryAllocations, currency, formatDate, isCurrentMonth, readableMonth } from '../finance'
 
-type Props = { expenses: ExpenseRecord[] }
+type Props = { expenses: ExpenseRecord[]; dateFormat: DateFormat }
 type Answer = { title: string; value: string; explanation: string; rows: string[] }
 const suggestions = ['How much did I spend on food this month?', 'What was my biggest expense?', 'How much did I spend on groceries last month?']
 
-function answerQuestion(question: string, expenses: ExpenseRecord[]): Answer {
+function answerQuestion(question: string, expenses: ExpenseRecord[], dateFormat: DateFormat): Answer {
   const q = question.toLowerCase()
   const month = new Date()
   const label = readableMonth(month)
@@ -17,7 +17,7 @@ function answerQuestion(question: string, expenses: ExpenseRecord[]): Answer {
     const searchPool = /\b(this month|monthly|in october|in january|in february|in march|in april|in may|in june|in july|in august|in september|in november|in december)\b/.test(q) ? current : expenses
     const biggest = searchPool.reduce<ExpenseRecord | null>((top, expense) => !top || expense.amount > top.amount ? expense : top, null)
     if (!biggest) return { title: `No expenses in ${label}`, value: '—', explanation: 'There are no saved transactions in the selected period, so there is not enough data to calculate a largest expense.', rows: [] }
-    return { title: biggest.merchant, value: currency(biggest.amount), explanation: searchPool === current ? `I compared ${current.length} saved transactions in ${label} and selected the largest receipt total.` : `I compared all ${expenses.length} saved transactions and selected the largest receipt total.`, rows: [`${new Date(`${biggest.date}T00:00:00`).toLocaleDateString('en-IN',{day:'numeric',month:'short',year:'numeric'})} · ${biggest.category}`] }
+    return { title: biggest.merchant, value: currency(biggest.amount), explanation: searchPool === current ? `I compared ${current.length} saved transactions in ${label} and selected the largest receipt total.` : `I compared all ${expenses.length} saved transactions and selected the largest receipt total.`, rows: [`${formatDate(biggest.date, dateFormat)} · ${biggest.category}`] }
   }
   const keywordMap: Array<[RegExp, string[]]> = [
     [/food|restaurant|cafe|dining|eat|coffee/, ['Food & drink']], [/grocer|dmart|supermarket|milk|biscuits?/, ['Groceries']], [/personal care|shampoo|soap|toothpaste/, ['Personal Care']], [/transport|travel|uber|ola|fuel|petrol/, ['Transport']], [/shopping|shop|clothes/, ['Shopping']], [/bill|utility|electricity|internet/, ['Bills']], [/health|medical|pharmacy|medicine/, ['Health']], [/subscription|netflix|spotify/, ['Subscriptions']],
@@ -49,10 +49,10 @@ function answerQuestion(question: string, expenses: ExpenseRecord[]): Answer {
   }
 }
 
-export default function AskPenny({ expenses }: Props) {
+export default function AskPenny({ expenses, dateFormat }: Props) {
   const [question, setQuestion] = useState('')
   const [submitted, setSubmitted] = useState('')
-  const currentAnswer = useMemo(() => submitted ? answerQuestion(submitted, expenses) : null, [submitted, expenses])
+  const currentAnswer = useMemo(() => submitted ? answerQuestion(submitted, expenses, dateFormat) : null, [submitted, expenses, dateFormat])
   const ask = (value = question) => { if (!value.trim()) return; setSubmitted(value.trim()); setQuestion('') }
 
   return <section className="ask-page"><div className="ask-hero ask-data-hero"><div className="ask-sparkle"><Sparkles size={24}/></div><span className="eyebrow">CALCULATIONS FROM YOUR DATA</span><h2>Ask Penny about your spending.</h2><p>Get a quick answer calculated from expenses saved to your account or this device.</p><span className="data-based-badge"><Sparkles size={13}/> Expense-based calculations · no AI service connected</span><div className="suggestions">{suggestions.map((suggestion) => <button key={suggestion} onClick={() => ask(suggestion)}>{suggestion} <ArrowUpRight size={14}/></button>)}</div>{currentAnswer && <article className="penny-answer" aria-live="polite"><div className="answer-title"><span className="penny-avatar">✳</span><div><small>BASED ON YOUR SAVED EXPENSES</small><b>{currentAnswer.title}</b></div></div><strong className="answer-value">{currentAnswer.value}</strong><p>{currentAnswer.explanation}</p>{currentAnswer.rows.length > 0 && <details><summary>Show calculation details ({currentAnswer.rows.length})</summary><ul>{currentAnswer.rows.map((row) => <li key={row}>{row}</li>)}</ul></details>}</article>}<div className="ask-input"><input value={question} onChange={(event) => setQuestion(event.target.value)} onKeyDown={(event) => event.key === 'Enter' && ask()} placeholder="Try “What was my biggest expense?”" aria-label="Ask Penny a question"/><button aria-label="Calculate answer" onClick={() => ask()}><Send size={17}/></button></div><small className="local-ai-note">Penny calculates answers from saved records. It does not connect to or claim to use an AI model.</small></div></section>

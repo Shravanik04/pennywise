@@ -28,8 +28,10 @@ export default function Sidebar({ active, onNavigate, accountLabel, accountDetai
     <button ref={menuButton} className="mobile-menu" onClick={() => setOpen(!open)} aria-label={open ? 'Close navigation' : 'Open navigation'} aria-expanded={open} aria-controls="primary-navigation">{open ? <X size={20} /> : <Menu size={20} />}</button>
     {open && <button className="sidebar-scrim" aria-label="Close navigation" onClick={() => setOpen(false)} />}
     <aside className={`sidebar ${open ? 'sidebar-open' : ''}`}>
-      <div className="brand"><span className="brand-mark">p.</span><span>pennywise</span><span className="brand-dot">✳</span></div>
-      <div className="workspace-switch"><span className="workspace-avatar">{accountLabel[0]?.toUpperCase() ?? 'P'}</span><span className="workspace-copy"><b>{accountLabel}</b><small>{accountDetail}</small></span></div>
+      <div className="sidebar-header">
+        <div className="brand"><span className="brand-mark">p.</span><span>pennywise</span><span className="brand-dot">✳</span></div>
+        <div className="workspace-switch"><span className="workspace-avatar">{accountLabel[0]?.toUpperCase() ?? 'P'}</span><span className="workspace-copy"><b>{accountLabel}</b><small>{accountDetail}</small></span></div>
+      </div>
       <div className="nav-label">MENU</div>
       <nav className="main-nav" id="primary-navigation" aria-label="Primary navigation">{navItems.map(({ label, icon: Icon }) => <button key={label} className={`nav-item ${active === label ? 'active' : ''}`} aria-current={active === label ? 'page' : undefined} onClick={() => choose(label)}><Icon size={18} strokeWidth={1.8} /><span>{label}</span></button>)}</nav>
       <div className="sidebar-bottom">

@@ -31,6 +31,10 @@ export const subscribeToStorageChanges = (onChange: () => void) => {
 }
 
 export type MonthlyBudget = { id: string; category: string; limit: number }
+export type DateFormat = 'd-mmm-yyyy' | 'dd/mm/yyyy' | 'yyyy-mm-dd'
+export type AppPreferences = { dateFormat: DateFormat }
+export const DEFAULT_PREFERENCES: AppPreferences = { dateFormat: 'd-mmm-yyyy' }
+const PREFERENCES_KEY = 'app-preferences'
 
 function getDatabase() {
   if (!('indexedDB' in window)) return Promise.reject(new Error('This browser does not support local receipt storage.'))
@@ -125,6 +129,48 @@ export async function saveBudgets(budgets: MonthlyBudget[], owner = 'local') {
     tx.oncomplete = () => { notifyChange(); resolve() }
     tx.onerror = () => reject(tx.error ?? new Error('Could not save monthly budgets.'))
     tx.onabort = () => reject(tx.error ?? new Error('Budget saving was interrupted.'))
+  })
+}
+
+export async function loadPreferences(): Promise<AppPreferences> {
+  const db = await getDatabase()
+  return new Promise((resolve, reject) => {
+    const request = db.transaction(META, 'readonly').objectStore(META).get(PREFERENCES_KEY)
+    request.onsuccess = () => {
+      const saved = request.result as Partial<AppPreferences> | undefined
+      const dateFormat = saved?.dateFormat
+      resolve(dateFormat === 'd-mmm-yyyy' || dateFormat === 'dd/mm/yyyy' || dateFormat === 'yyyy-mm-dd'
+        ? { dateFormat }
+        : DEFAULT_PREFERENCES)
+    }
+    request.onerror = () => reject(request.error ?? new Error('Could not load Pennywise preferences.'))
+  })
+}
+
+export async function savePreferences(preferences: AppPreferences) {
+  if (!['d-mmm-yyyy', 'dd/mm/yyyy', 'yyyy-mm-dd'].includes(preferences.dateFormat)) {
+    throw new Error('Choose a supported date format.')
+  }
+  const db = await getDatabase()
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction(META, 'readwrite')
+    tx.objectStore(META).put(preferences, PREFERENCES_KEY)
+    tx.oncomplete = () => { notifyChange(); resolve() }
+    tx.onerror = () => reject(tx.error ?? new Error('Could not save Pennywise preferences.'))
+    tx.onabort = () => reject(tx.error ?? new Error('Saving Pennywise preferences was interrupted.'))
+  })
+}
+
+export async function clearLocalBrowserData() {
+  const db = await getDatabase()
+  return new Promise<void>((resolve, reject) => {
+    const tx = db.transaction([STORE, RECEIPTS, META], 'readwrite')
+    tx.objectStore(STORE).clear()
+    tx.objectStore(RECEIPTS).clear()
+    tx.objectStore(META).clear()
+    tx.oncomplete = () => { notifyChange(); resolve() }
+    tx.onerror = () => reject(tx.error ?? new Error('Could not clear this browser’s Pennywise data.'))
+    tx.onabort = () => reject(tx.error ?? new Error('Clearing this browser’s Pennywise data was interrupted.'))
   })
 }
 
