@@ -37,6 +37,7 @@ Pennywise is a personal finance app for tracking expenses, organizing budgets, a
 
 ```bash
 npm install
+```
 
 ### Start the app
 
